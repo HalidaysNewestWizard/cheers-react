@@ -26,6 +26,7 @@ import fetchCashOut from './fetch-cashout';
 import fetchReqData from './fetch-Reqs';
 import fetchRTDData from './fetch-RTD';
 import fetchTransactions from './fetch-Transactions';
+import { Float } from '@chakra-ui/react';
 
 // username to be replaced with user object from auth
 let userName = { job: 'Inventory', name: 'Johnny', id: 1 };
@@ -94,6 +95,7 @@ function CashOutPg() {
     'Price',
     'Stock Used',
     'Product Value',
+    'Sales Total',
   ];
   let transTableTitles = [
     'Row',
@@ -140,6 +142,8 @@ function CashOutPg() {
   }, []);
 
   // Map firestore data to match format of table for Main Cashout Table
+  // uses the openOZ closeOZ stockUsed StockValueRow AddTransTableToCashOut AddReqTableToCashOut functions
+
   useEffect(() => {
     const mappedData = CashOutItems.map((item, index) => [
       index + 1, // Row #
@@ -178,6 +182,7 @@ function CashOutPg() {
     // Trigger data fetch when component mounts
     fetchReqs();
   }, [CashOutItems]);
+  // map firestore data to match format of table for Requests Table
   useEffect(() => {
     const mappedData = reqData.map((item, index) => [
       index + 1, // Row #
@@ -200,6 +205,8 @@ function CashOutPg() {
     // Trigger data fetch when component mounts
     fetchRTDs();
   }, [reqData]);
+  // Map firestore data to match format of table for RTD Table
+  // uses the RTDPopulateFoodStock AddReqTableToRTD RTDStockValueRow functions
   useEffect(() => {
     const mappedData = RTDItems.map((item, index) => [
       index + 1, // Row #
@@ -211,12 +218,13 @@ function CashOutPg() {
 
     setRTDTableData(
       RTDPopulateFoodStock(mappedData).map((row) =>
-        RTDStockValueRow(AddReqTableToRTD(row))
+        AddTransTableToCashOut(RTDStockValueRow(AddReqTableToRTD(row)))
       )
     );
   }, [RTDItems]);
 
   // Transactions Table
+  //No extra mapping needed for the transactions table
   useEffect(() => {
     const fetchTrans = async () => {
       setLoading(true);
@@ -244,31 +252,17 @@ function CashOutPg() {
     fetchTrans();
   }, [baristaID, userDate]);
 
-  //ROW FUNCTIONS FOR THE MAIN CASHOUT TABLE
+  //ROW FUNCTIONS FOR THE MAIN CASHOUT TABLE//
   // used in the mapped data useEffect to add rows to the table
   // row to calculate sales
 
-  /**
-    Calculates the amount of stock used based on the provided row data.
-   *
-   * @param {Array} row - The row data containing inventory information.
-   * @returns {Array} - The updated row data with the calculated stock used appended.
-   *
-   * The function handles two types of stock: 'Gin' and 'Rum'.
-   * For 'Gin', it calculates the stock used by adding the requested ounces,
-   * subtracting the closing stock and spills, and ensuring the result is non-negative.
-   * For 'Rum', it calculates the stock used by subtracting the closing stock from the opening stock.
-   *
-   * If the calculated stock used is NaN, it defaults to 0.
-   * The result is appended to the row data and returned.
-   */
   const stockUsed = (row) => {
     //TO DO:
     //This functions conditional can be removed when added to the main app due to the added data to make it work as intended
     if (row[10] === 'Gin') {
-      let openTotalOz = Number(row[11]);
+      let openTotalOz = parseFloat(row[11]);
 
-      let stockCloseFull = Number(row[12]); // Correct index for Quantity
+      let stockCloseFull = parseFloat(row[12]); // Correct index for Quantity
 
       // ADD REQ OZ  subtract the spills
       let spills = 2;
@@ -471,31 +465,39 @@ function CashOutPg() {
     return newRow;
   };
 
+  /**
+   * Adds the total sales amount to the given row based on matching transaction data.
+   *
+   * @param {Array} row - The row to which the total sales amount will be added.
+   * @returns {Array} The new row with the total sales amount appended.
+   */
   const AddTransTableToCashOut = (row) => {
     let newRow = [...row];
-
-    // Initialize total sales for the liquor type
     let totalSales = 0;
 
-    // Iterate over each transaction row
     transTableData.forEach((innerRow) => {
-      // Check if the liquor type matches
-      innerRow.forEach((element, index) => {
-        if (element === row[1]) {
-          console.log('Match found:', innerRow);
-
-          let sales = Number(innerRow[index + 2].replace('$', '')); // Extract total sales from the correct column
-          if (isNaN(sales)) {
-            sales = 0;
-          }
-          totalSales += sales;
-        }
-      });
+      if (innerRow[2] === row[1]) {
+        let sales = parseFloat(innerRow[4].replace('$', '')) || 0;
+        totalSales += sales;
+      }
     });
 
-    // Add the total sales as a new item in the array
-    newRow.push(` $${totalSales.toFixed(2)}`);
+    newRow.push(`$${totalSales.toFixed(2)}`);
+    return newRow;
+  };
 
+  const AddTransTableToRTD = (row) => {
+    let newRow = [...row];
+    let totalSales = 0;
+
+    transTableData.forEach((innerRow) => {
+      if (innerRow[2] === row[1]) {
+        let sales = parseFloat(innerRow[4].replace('$', '')) || 0;
+        totalSales += sales;
+      }
+    });
+
+    newRow.push(`$${totalSales.toFixed(2)}`);
     return newRow;
   };
 
@@ -596,18 +598,20 @@ function CashOutPg() {
         <Spliter
           title2='Requests'
           title='Transactions'>
-          <Table
-            key={'Transactions'}
-            tableData={transTableData}
-            tableTitles={transTableTitles}
-            setModData={(data) => {
-              setModData(data);
-              setSelectedTransRow(data);
-            }}
-            modData={modData}
-            selectedRow={selectedTransRow}
-            setSelectedRow={setSelectedTransRow}
-          />
+          <div className='flex w-full h-3/4'>
+            <Table
+              key={'Transactions'}
+              tableData={transTableData}
+              tableTitles={transTableTitles}
+              setModData={(data) => {
+                setModData(data);
+                setSelectedTransRow(data);
+              }}
+              modData={modData}
+              selectedRow={selectedTransRow}
+              setSelectedRow={setSelectedTransRow}
+            />
+          </div>
           <Table
             key='invReqTable'
             tableData={invReqTableData}
