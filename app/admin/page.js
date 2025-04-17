@@ -19,6 +19,7 @@ import {
   UserPlus,
   Sheet,
   LayoutDashboard,
+  HandPlatter,
 } from 'lucide-react';
 
 import ControlPanel from './control-panel/page';
@@ -79,7 +80,7 @@ export default function AdminPanel() {
     {
       id: 'Add POS Item',
       label: 'Add POS Item',
-      icon: <BookMarked size={27} />,
+      icon: <HandPlatter size={27} />,
       path: '/dashboard/settings',
     },
 
@@ -251,7 +252,7 @@ export default function AdminPanel() {
                 setActiveItem(item.id);
                 setIsMobileMenuOpen(false);
               }}
-              className={`flex items-center p-4 hover:bg-gray-100 transition-colors ${
+              className={`flex items-center p-4  hover:text-orange-500 transition-colors ${
                 activeItem === item.id
                   ? 'rounded-xl bg-[#FF6E1F20] text-[#FF6E1F] p-10 font-bold'
                   : 'text-gray-700'

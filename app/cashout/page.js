@@ -133,7 +133,7 @@ export default function CashoutAdmin() {
                 setActiveItem(item.id);
                 setIsMobileMenuOpen(false);
               }}
-              className={`flex items-center p-4 hover:bg-gray-100 transition-colors ${
+              className={`flex items-center p-4 hover:text-orange-500 transition-colors ${
                 activeItem === item.id
                   ? 'rounded-xl bg-[#FF6E1F20] text-[#FF6E1F] p-10 font-bold'
                   : 'text-gray-700'
